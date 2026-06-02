@@ -14,7 +14,7 @@ __pycache__/
 *.db-shm
 *.db-wal
 
-# editor
+# editor / IDE
 .idea/
 .vscode/
 *.swp

@@ -2,24 +2,24 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:       #0f1117;
-  --surface:  #1a1d27;
-  --surface2: #222535;
-  --border:   #2e3147;
-  --ford:     #003DA5;   /* Ford blue */
-  --accent:   #0066cc;
+  --bg:       #0c0d11;
+  --surface:  #13151c;
+  --surface2: #1c1f2a;
+  --border:   #252836;
+  --ford:     #003DA5;
+  --accent:   #2563eb;
   --green:    #22c55e;
   --yellow:   #eab308;
   --red:      #ef4444;
   --text:     #e2e8f0;
-  --muted:    #64748b;
-  --radius:   10px;
+  --muted:    #525870;
+  --radius:   8px;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   font-size: 14px;
   min-height: 100vh;
 }
@@ -34,51 +34,52 @@ header {
 }
 
 .header-inner {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0 16px;
-  height: 52px;
+  padding: 0 20px;
+  height: 48px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 
 .logo {
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--accent);
-  letter-spacing: .5px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  letter-spacing: .3px;
   white-space: nowrap;
 }
 
-nav { display: flex; gap: 4px; }
+nav { display: flex; gap: 2px; margin-left: 4px; }
 
 .tab-btn {
   background: none;
   border: none;
   color: var(--muted);
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  transition: all .15s;
+  transition: color .1s, background .1s;
 }
-.tab-btn:hover  { background: var(--surface2); color: var(--text); }
-.tab-btn.active { background: var(--ford);     color: #fff; }
+.tab-btn:hover  { color: var(--text); }
+.tab-btn.active { background: var(--surface2); color: var(--text); }
 
 .demo-badge {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 1px;
-  background: #713f12;
-  color: #fbbf24;
-  padding: 3px 9px;
+  letter-spacing: .8px;
+  background: #292212;
+  color: #a37a10;
+  padding: 2px 8px;
   border-radius: 4px;
+  border: 1px solid #3a3010;
 }
 
 .status-dot {
-  width: 8px; height: 8px;
+  width: 6px; height: 6px;
   border-radius: 50%;
   background: var(--muted);
   margin-left: auto;
@@ -86,137 +87,201 @@ nav { display: flex; gap: 4px; }
 }
 .status-dot.ok   { background: var(--green); }
 .status-dot.err  { background: var(--red); }
-.status-dot.poll { background: var(--yellow); animation: blink .8s infinite; }
+.status-dot.poll { background: var(--yellow); animation: blink .9s infinite; }
 
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
 
 /* ======================== Tabs ======================== */
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* ======================== Dashboard grid ======================== */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-  padding: 20px;
-  max-width: 1200px;
+/* ======================== Dashboard ======================== */
+.dash {
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.card {
+/* -- Map strip -- */
+.map-strip {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 5;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+
+#miniMap {
+  width: 100%;
+  height: 100%;
+}
+
+/* Bottom gradient + overlay */
+.map-foot {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 28px 14px 12px;
+  background: linear-gradient(to top, rgba(0,0,0,.72) 0%, transparent 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.map-lastseen {
+  font-size: 12px;
+  color: rgba(255,255,255,.65);
+  pointer-events: none;
+}
+
+/* Pills */
+.pill-row { display: flex; gap: 5px; flex-wrap: wrap; pointer-events: auto; }
+.pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.55);
+  backdrop-filter: blur(4px);
+}
+.pill.green  { background: rgba(34,197,94,.18);  color: #4ade80; }
+.pill.yellow { background: rgba(234,179,8,.18);  color: #facc15; }
+.pill.red    { background: rgba(239,68,68,.18);  color: #f87171; }
+.pill.blue   { background: rgba(37,99,235,.25);  color: #93c5fd; }
+
+/* -- Stat panel -- */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
+  overflow: hidden;
 }
 
-.card h3 {
+.stat-block {
+  padding: 18px 20px;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
+.stat-block:last-child { border-right: none; }
+
+.sblock-label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .8px;
+  letter-spacing: .7px;
   color: var(--muted);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
+/* Big fuel number */
 .big-value {
-  font-size: 42px;
+  font-size: 38px;
   font-weight: 700;
   line-height: 1;
   color: var(--text);
+  letter-spacing: -.5px;
 }
 
 .sub-value {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--muted);
-  margin-top: 4px;
-  min-height: 18px;
+  margin-top: 3px;
 }
 
-/* Fuel gauge */
-.gauge-wrap { margin: 10px 0 6px; }
+/* Fuel gauge bar */
+.gauge-wrap { margin: 10px 0 8px; }
 .gauge-bar {
-  height: 6px;
+  height: 3px;
   background: var(--surface2);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 }
 .gauge-fill {
   height: 100%;
   width: 0%;
-  border-radius: 3px;
+  border-radius: 2px;
   background: var(--green);
-  transition: width .6s ease;
+  transition: width .5s ease;
 }
-.gauge-fill.warn  { background: var(--yellow); }
-.gauge-fill.crit  { background: var(--red); }
-
-/* Mini map */
-#miniMap {
-  height: 140px;
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--surface2);
-  margin-bottom: 8px;
-}
-
-/* Pills */
-.pill-row { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-.pill {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-  background: var(--surface2);
-  color: var(--muted);
-}
-.pill.green  { background: #14532d; color: var(--green); }
-.pill.yellow { background: #713f12; color: var(--yellow); }
-.pill.red    { background: #7f1d1d; color: var(--red); }
-.pill.blue   { background: #1e3a5f; color: #60a5fa; }
+.gauge-fill.warn { background: var(--yellow); }
+.gauge-fill.crit { background: var(--red); }
 
 /* Key-value list */
-.kv-list { display: flex; flex-direction: column; gap: 8px; }
+.kv-list { display: flex; flex-direction: column; gap: 10px; }
 .kv {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
   font-size: 13px;
+  gap: 8px;
 }
-.kv span { color: var(--muted); }
-.kv strong { color: var(--text); }
+.kv span   { color: var(--muted); white-space: nowrap; }
+.kv strong { color: var(--text);  font-weight: 500; text-align: right; }
 
 /* Tire grid */
 .tire-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 8px;
 }
 .tire {
   background: var(--surface2);
   border-radius: 6px;
-  padding: 10px;
-  text-align: center;
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .tire-label {
-  display: block;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .6px;
+  letter-spacing: .5px;
   color: var(--muted);
-  margin-bottom: 2px;
 }
-.tire strong { font-size: 18px; }
+.tire strong { font-size: 16px; font-weight: 600; color: var(--text); }
+
+/* Activity grid (stats block) */
+.activity-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.activity-period {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.activity-label {
+  font-size: 12px;
+  color: var(--muted);
+  width: 80px;
+  flex-shrink: 0;
+}
+.activity-dist {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.activity-trips {
+  font-size: 12px;
+  color: var(--muted);
+}
 
 /* ======================== Map tab ======================== */
 .map-toolbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 10px 20px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -229,7 +294,7 @@ nav { display: flex; gap: 4px; }
   padding: 5px 10px;
   border-radius: 6px;
   font-size: 13px;
-  min-width: 260px;
+  min-width: 240px;
 }
 
 .trip-info-label {
@@ -245,16 +310,17 @@ nav { display: flex; gap: 4px; }
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
+  transition: background .1s, border-color .1s;
 }
-.btn-sm:hover { background: var(--ford); border-color: var(--ford); }
+.btn-sm:hover { background: var(--ford); border-color: var(--ford); color: #fff; }
 
 #mainMap {
-  height: calc(100vh - 52px - 44px);
+  height: calc(100vh - 48px - 42px);
 }
 
 /* ======================== Trips tab ======================== */
 .trips-toolbar {
-  padding: 12px 20px;
+  padding: 10px 20px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   color: var(--muted);
@@ -269,7 +335,7 @@ nav { display: flex; gap: 4px; }
 
 #tripsTable th {
   text-align: left;
-  padding: 10px 16px;
+  padding: 9px 16px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -278,7 +344,7 @@ nav { display: flex; gap: 4px; }
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   position: sticky;
-  top: 52px;
+  top: 48px;
 }
 
 #tripsTable td {
@@ -286,36 +352,52 @@ nav { display: flex; gap: 4px; }
   border-bottom: 1px solid var(--border);
 }
 
-#tripsTable tbody tr {
-  cursor: pointer;
-  transition: background .1s;
-}
-#tripsTable tbody tr:hover { background: var(--surface2); }
-#tripsTable tbody tr.active-trip { background: #1e2d4a; }
+#tripsTable tbody tr { cursor: pointer; }
+#tripsTable tbody tr:hover { background: var(--surface); }
+#tripsTable tbody tr.active-trip { background: #0f1929; }
 
 .badge-active {
   font-size: 10px;
-  background: #1e3a5f;
-  color: #60a5fa;
+  background: rgba(37,99,235,.2);
+  color: #93c5fd;
   padding: 2px 7px;
   border-radius: 10px;
   font-weight: 600;
-  margin-left: 6px;
 }
 
 .empty-state {
   padding: 60px;
   text-align: center;
   color: var(--muted);
+  font-size: 13px;
 }
 
 /* ======================== Leaflet dark overrides ======================== */
-.leaflet-container { background: #1a1d27 !important; }
-.leaflet-control-attribution { background: rgba(0,0,0,.6) !important; color: #94a3b8 !important; }
-.leaflet-control-attribution a { color: #60a5fa !important; }
+.leaflet-container { background: #13151c !important; }
+.leaflet-control-attribution {
+  background: rgba(0,0,0,.5) !important;
+  color: #525870 !important;
+  font-size: 10px !important;
+}
+.leaflet-control-attribution a { color: #4b7fd4 !important; }
 .leaflet-control-zoom a {
   background: var(--surface) !important;
   color: var(--text) !important;
   border-color: var(--border) !important;
 }
 .leaflet-control-zoom a:hover { background: var(--surface2) !important; }
+
+/* ======================== Responsive ======================== */
+@media (max-width: 860px) {
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .stat-block:nth-child(2) { border-right: none; }
+  .stat-block:nth-child(3) { border-top: 1px solid var(--border); }
+  .stat-block:nth-child(4) { border-top: 1px solid var(--border); border-right: none; }
+  .map-strip { aspect-ratio: 4 / 3; }
+}
+
+@media (max-width: 520px) {
+  .stat-row { grid-template-columns: 1fr; }
+  .stat-block { border-right: none !important; border-top: 1px solid var(--border); }
+  .stat-block:first-child { border-top: none; }
+}

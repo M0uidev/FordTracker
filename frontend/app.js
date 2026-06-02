@@ -118,13 +118,14 @@ function renderDashboard(status, stats, fuelHistory) {
     tripPill.style.display = 'none';
   }
 
-  // Stats
-  document.getElementById('weekTrips').textContent  = stats.week_trips;
+  // Activity stats
+  const tripsLabel = n => `${n} trip${n !== 1 ? 's' : ''}`;
   document.getElementById('weekDist').textContent   = `${stats.week_distance_km.toFixed(1)} km`;
-  document.getElementById('monthTrips').textContent = stats.month_trips;
+  document.getElementById('weekTrips').textContent  = tripsLabel(stats.week_trips);
   document.getElementById('monthDist').textContent  = `${stats.month_distance_km.toFixed(1)} km`;
-  document.getElementById('totalTrips').textContent = stats.total_trips;
+  document.getElementById('monthTrips').textContent = tripsLabel(stats.month_trips);
   document.getElementById('totalDist').textContent  = `${stats.total_distance_km.toFixed(1)} km`;
+  document.getElementById('totalTrips').textContent = tripsLabel(stats.total_trips);
 
   // Fuel sparkline
   renderFuelChart(fuelHistory);
@@ -144,13 +145,27 @@ function relativeTime(date) {
 
 function renderMiniMap(lat, lng) {
   if (!miniMap) {
-    miniMap = L.map('miniMap', { zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false });
+    miniMap = L.map('miniMap', {
+      zoomControl: false,
+      attributionControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      keyboard: false,
+    });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(miniMap);
-    miniMarker = L.circleMarker([lat, lng], { radius: 8, color: '#0066cc', fillColor: '#3b82f6', fillOpacity: 1 }).addTo(miniMap);
+    miniMarker = L.circleMarker([lat, lng], {
+      radius: 8,
+      color: '#fff',
+      weight: 2,
+      fillColor: '#2563eb',
+      fillOpacity: 1,
+    }).addTo(miniMap);
+    miniMap.setView([lat, lng], 15);
+    requestAnimationFrame(() => miniMap.invalidateSize());
   } else {
     miniMarker.setLatLng([lat, lng]);
+    miniMap.setView([lat, lng], 15);
   }
-  miniMap.setView([lat, lng], 15);
 }
 
 function renderFuelChart(history) {

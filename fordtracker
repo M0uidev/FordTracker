@@ -1,42 +1,29 @@
 #!/usr/bin/env bash
-# fordtracker — start the FordTracker server and open the browser
-
-set -euo pipefail
+# fordtracker — interactive launcher for FordTracker
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 VENV="$SCRIPT_DIR/.venv"
 PORT=8421
-DEMO=false
-NO_BROWSER=false
 HOST=127.0.0.1
+ENV_FILE="$SCRIPT_DIR/.env"
 
-usage() {
-  cat <<EOF
-Usage: fordtracker [OPTIONS]
+# ---- ANSI helpers ----
+ESC=$'\033'
+RESET="${ESC}[0m"
+BOLD="${ESC}[1m"
+DIM="${ESC}[2m"
+CYAN="${ESC}[96m"
+WHITE="${ESC}[97m"
+RED="${ESC}[91m"
+BG_SEL="${ESC}[48;5;17m"
 
-Options:
-  --demo          Run with fake demo data (no credentials needed)
-  --port PORT     Port to listen on (default: 8421)
-  --no-browser    Don't auto-open the browser
-  -h, --help      Show this help
-
-Examples:
-  fordtracker --demo
-  fordtracker --port 9000
-EOF
+# ---- Terminal cleanup on exit ----
+_cleanup() {
+  tput cnorm 2>/dev/null || true
+  tput rmcup 2>/dev/null || true
+  stty echo 2>/dev/null || true
 }
-
-# ---- Parse args ----
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --demo)       DEMO=true; shift ;;
-    --no-browser) NO_BROWSER=true; shift ;;
-    --port)       PORT="$2"; shift 2 ;;
-    --port=*)     PORT="${1#*=}"; shift ;;
-    -h|--help)    usage; exit 0 ;;
-    *) echo "Unknown option: $1"; usage; exit 1 ;;
-  esac
-done
+trap _cleanup EXIT INT TERM
 
 # ---- Sanity checks ----
 if [[ ! -d "$VENV" ]]; then
@@ -45,22 +32,205 @@ if [[ ! -d "$VENV" ]]; then
   exit 1
 fi
 
-ENV_FILE="$SCRIPT_DIR/.env"
-if [[ "$DEMO" == false && ! -f "$ENV_FILE" ]]; then
-  echo "Error: .env file not found."
-  echo "Copy .env.example → .env and fill in your FordPass credentials, or run with --demo."
-  exit 1
-fi
+# ---- Menu items ----
+ITEMS=("Start" "Start in Demo Mode" "Edit Credentials" "Quit")
+# Disable "Start" when no .env exists — track disabled state separately
+SELECTED=0
+[[ ! -f "$ENV_FILE" ]] && SELECTED=1
+
+_env_email() {
+  [[ -f "$ENV_FILE" ]] && grep -E '^FORDPASS_EMAIL=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 || true
+}
+
+_draw_menu() {
+  local email
+  email="$(_env_email)"
+  local has_env=false
+  [[ -f "$ENV_FILE" && -n "$email" ]] && has_env=true
+
+  clear
+  printf '\n'
+  printf "  ${BOLD}${CYAN}▲ FordTracker${RESET}\n"
+  printf "  ${DIM}GPS tracker for your Ford Maverick${RESET}\n"
+  printf '\n'
+
+  for i in "${!ITEMS[@]}"; do
+    local label="${ITEMS[$i]}"
+    # "Start" is disabled without credentials
+    if [[ $i -eq 0 && "$has_env" == false ]]; then
+      printf "  ${DIM}    %-28s  ${RESET}${DIM}(no credentials)${RESET}\n" "$label"
+      continue
+    fi
+
+    if [[ $i -eq $SELECTED ]]; then
+      printf "  ${BG_SEL}${WHITE}${BOLD}  › %-28s  ${RESET}\n" "$label"
+    else
+      printf "  ${DIM}    %-28s  ${RESET}\n" "$label"
+    fi
+  done
+
+  printf '\n'
+  printf "  ${DIM}↑ ↓  navigate    Enter  select    q  quit${RESET}\n"
+  printf '\n'
+
+  if [[ "$has_env" == true ]]; then
+    printf "  ${DIM}Account: ${RESET}${email}\n"
+  else
+    printf "  ${DIM}No credentials — run Edit Credentials first${RESET}\n"
+  fi
+}
+
+_read_key() {
+  local key seq
+  IFS= read -r -s -n1 key
+  if [[ "$key" == $'\x1b' ]]; then
+    IFS= read -r -s -n2 -t 0.1 seq || true
+    key="${key}${seq}"
+  fi
+  printf '%s' "$key"
+}
+
+# ---- Edit credentials ----
+_edit_credentials() {
+  local cur_email="" cur_password="" cur_vin=""
+  if [[ -f "$ENV_FILE" ]]; then
+    cur_email=$(grep -E '^FORDPASS_EMAIL=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 || true)
+    cur_password=$(grep -E '^FORDPASS_PASSWORD=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 || true)
+    cur_vin=$(grep -E '^FORDPASS_VIN=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 || true)
+  fi
+
+  clear
+  printf '\n'
+  printf "  ${BOLD}${CYAN}▲ FordTracker${RESET}  ${DIM}— Edit Credentials${RESET}\n"
+  printf '\n'
+  printf "  ${DIM}Press Enter to keep existing value.${RESET}\n"
+  printf '\n'
+
+  tput cnorm 2>/dev/null || true
+  stty echo
+
+  printf "  FordPass Email"
+  [[ -n "$cur_email" ]] && printf " ${DIM}[${cur_email}]${RESET}"
+  printf ': '
+  local new_email
+  read -r new_email
+  [[ -z "$new_email" ]] && new_email="$cur_email"
+
+  printf "  FordPass Password"
+  [[ -n "$cur_password" ]] && printf " ${DIM}[hidden]${RESET}"
+  printf ': '
+  stty -echo
+  local new_password
+  read -r new_password
+  stty echo
+  printf '\n'
+  [[ -z "$new_password" ]] && new_password="$cur_password"
+
+  printf "  VIN ${DIM}(optional — auto-detected if blank)${RESET}"
+  [[ -n "$cur_vin" ]] && printf " ${DIM}[${cur_vin}]${RESET}"
+  printf ': '
+  local new_vin
+  read -r new_vin
+  [[ -z "$new_vin" ]] && new_vin="$cur_vin"
+
+  # Restore menu state
+  stty -echo
+  tput civis 2>/dev/null || true
+
+  if [[ -z "$new_email" || -z "$new_password" ]]; then
+    printf '\n  '"${RED}"'Email and password are required — credentials not saved.'"${RESET}"'\n'
+    sleep 1.5
+    return
+  fi
+
+  # Preserve any extra existing vars (poll interval etc.) then overwrite the credentials
+  local poll interval timeout threshold db_path
+  poll=$(grep -E '^POLL_INTERVAL_SECONDS=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 || echo "180")
+  timeout=$(grep -E '^TRIP_TIMEOUT_MINUTES=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 || echo "10")
+  threshold=$(grep -E '^MOVEMENT_THRESHOLD_METERS=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 || echo "50")
+  db_path=$(grep -E '^DB_PATH=' "$ENV_FILE" 2>/dev/null | cut -d= -f2 || echo "fordtracker.db")
+
+  {
+    printf 'FORDPASS_EMAIL=%s\n' "$new_email"
+    printf 'FORDPASS_PASSWORD=%s\n' "$new_password"
+    printf 'FORDPASS_VIN=%s\n' "$new_vin"
+    printf 'POLL_INTERVAL_SECONDS=%s\n' "$poll"
+    printf 'TRIP_TIMEOUT_MINUTES=%s\n' "$timeout"
+    printf 'MOVEMENT_THRESHOLD_METERS=%s\n' "$threshold"
+    printf 'DB_PATH=%s\n' "$db_path"
+  } > "$ENV_FILE"
+
+  printf '\n  Credentials saved.\n'
+  sleep 1
+}
+
+# ---- Interactive menu loop ----
+tput smcup 2>/dev/null || true
+tput civis 2>/dev/null || true
+stty -echo
+
+DEMO=false
+
+while true; do
+  _draw_menu
+  key="$(_read_key)"
+
+  case "$key" in
+    # Up arrow / k
+    $'\x1b[A'|k)
+      SELECTED=$(( (SELECTED - 1 + ${#ITEMS[@]}) % ${#ITEMS[@]} ))
+      # Skip disabled "Start" when no .env
+      if [[ $SELECTED -eq 0 && ! -f "$ENV_FILE" ]]; then
+        SELECTED=$(( ${#ITEMS[@]} - 1 ))
+      fi
+      ;;
+    # Down arrow / j
+    $'\x1b[B'|j)
+      SELECTED=$(( (SELECTED + 1) % ${#ITEMS[@]} ))
+      # Skip disabled "Start" when no .env
+      if [[ $SELECTED -eq 0 && ! -f "$ENV_FILE" ]]; then
+        SELECTED=1
+      fi
+      ;;
+    # Enter
+    ''|$'\n'|$'\r')
+      case $SELECTED in
+        0)  # Start (normal)
+          DEMO=false
+          break
+          ;;
+        1)  # Start in Demo Mode
+          DEMO=true
+          break
+          ;;
+        2)  # Edit credentials
+          _edit_credentials
+          # After editing, if .env now exists and we're on demo, stay — user can navigate
+          ;;
+        3)  # Quit
+          exit 0
+          ;;
+      esac
+      ;;
+    q|Q)
+      exit 0
+      ;;
+  esac
+done
+
+# ---- Restore terminal ----
+tput rmcup 2>/dev/null || true
+tput cnorm 2>/dev/null || true
+stty echo
 
 # ---- Export env ----
 export DEMO_MODE="$DEMO"
 [[ -f "$ENV_FILE" ]] && set -a && source "$ENV_FILE" && set +a
 
 # ---- Open browser once server is ready ----
-open_browser() {
+_open_browser() {
   local url="http://$HOST:$PORT"
-  # Wait for the server to accept connections (up to 10s)
-  for i in $(seq 1 20); do
+  for _ in $(seq 1 20); do
     if bash -c ">/dev/tcp/$HOST/$PORT" 2>/dev/null; then
       if command -v xdg-open &>/dev/null; then
         xdg-open "$url" &>/dev/null &
@@ -74,20 +244,17 @@ open_browser() {
 }
 
 # ---- Banner ----
-echo ""
+printf '\n'
 if [[ "$DEMO" == true ]]; then
-  echo "  ▲ FordTracker  [DEMO MODE]"
+  printf "  ${BOLD}${CYAN}▲ FordTracker${RESET}  ${DIM}[DEMO MODE]${RESET}\n"
 else
-  echo "  ▲ FordTracker"
+  printf "  ${BOLD}${CYAN}▲ FordTracker${RESET}\n"
 fi
-echo "  http://$HOST:$PORT"
-echo "  Press Ctrl+C to stop"
-echo ""
+printf "  http://$HOST:$PORT\n"
+printf "  Press Ctrl+C to stop\n"
+printf '\n'
 
-# ---- Launch ----
-if [[ "$NO_BROWSER" == false ]]; then
-  open_browser &
-fi
+_open_browser &
 
 cd "$SCRIPT_DIR"
 exec "$VENV/bin/uvicorn" tracker.main:app \
