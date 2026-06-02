@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# fordtracker — start the FordTracker server and open the browser
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+VENV="$SCRIPT_DIR/.venv"
+PORT=8421
+DEMO=false
+NO_BROWSER=false
+HOST=127.0.0.1
+
+usage() {
+  cat <<EOF
+Usage: fordtracker [OPTIONS]
+
+Options:
+  --demo          Run with fake demo data (no credentials needed)
+  --port PORT     Port to listen on (default: 8421)
+  --no-browser    Don't auto-open the browser
+  -h, --help      Show this help
+
+Examples:
+  fordtracker --demo
+  fordtracker --port 9000
+EOF
+}
+
+# ---- Parse args ----
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --demo)       DEMO=true; shift ;;
+    --no-browser) NO_BROWSER=true; shift ;;
+    --port)       PORT="$2"; shift 2 ;;
+    --port=*)     PORT="${1#*=}"; shift ;;
+    -h|--help)    usage; exit 0 ;;
+    *) echo "Unknown option: $1"; usage; exit 1 ;;
+  esac
+done
+
+# ---- Sanity checks ----
+if [[ ! -d "$VENV" ]]; then
+  echo "Error: virtualenv not found at $VENV"
+  echo "Run:  python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+  exit 1
+fi
+
+ENV_FILE="$SCRIPT_DIR/.env"
+if [[ "$DEMO" == false && ! -f "$ENV_FILE" ]]; then
+  echo "Error: .env file not found."
+  echo "Copy .env.example → .env and fill in your FordPass credentials, or run with --demo."
+  exit 1
+fi
+
+# ---- Export env ----
+export DEMO_MODE="$DEMO"
+[[ -f "$ENV_FILE" ]] && set -a && source "$ENV_FILE" && set +a
+
+# ---- Open browser once server is ready ----
+open_browser() {
+  local url="http://$HOST:$PORT"
+  # Wait for the server to accept connections (up to 10s)
+  for i in $(seq 1 20); do
+    if bash -c ">/dev/tcp/$HOST/$PORT" 2>/dev/null; then
+      if command -v xdg-open &>/dev/null; then
+        xdg-open "$url" &>/dev/null &
+      elif command -v open &>/dev/null; then
+        open "$url" &
+      fi
+      return
+    fi
+    sleep 0.5
+  done
+}
+
+# ---- Banner ----
+echo ""
+if [[ "$DEMO" == true ]]; then
+  echo "  ▲ FordTracker  [DEMO MODE]"
+else
+  echo "  ▲ FordTracker"
+fi
+echo "  http://$HOST:$PORT"
+echo "  Press Ctrl+C to stop"
+echo ""
+
+# ---- Launch ----
+if [[ "$NO_BROWSER" == false ]]; then
+  open_browser &
+fi
+
+cd "$SCRIPT_DIR"
+exec "$VENV/bin/uvicorn" tracker.main:app \
+  --host "$HOST" \
+  --port "$PORT" \
+  --log-level info

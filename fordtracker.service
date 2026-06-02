@@ -1,0 +1,15 @@
+[Unit]
+Description=FordTracker GPS Daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Documents/Proyectos/FordTracker
+ExecStart=%h/Documents/Proyectos/FordTracker/.venv/bin/uvicorn tracker.main:app --host 127.0.0.1 --port 8421
+EnvironmentFile=%h/Documents/Proyectos/FordTracker/.env
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

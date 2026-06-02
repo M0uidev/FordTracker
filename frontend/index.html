@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FordTracker</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Chart.js -->
+  <script src="https://unpkg.com/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <span class="logo">&#9650; FordTracker</span>
+      <span class="demo-badge" id="demoBadge" style="display:none">DEMO</span>
+      <nav>
+        <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+        <button class="tab-btn" data-tab="map">Map</button>
+        <button class="tab-btn" data-tab="trips">Trips</button>
+      </nav>
+      <span class="status-dot" id="statusDot" title="Connection status"></span>
+    </div>
+  </header>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <section id="tab-dashboard" class="tab-content active">
+    <div class="grid">
+
+      <!-- Fuel card -->
+      <div class="card">
+        <h3>Fuel</h3>
+        <div class="big-value" id="fuelPct">—</div>
+        <div class="sub-value" id="fuelRange"></div>
+        <div class="gauge-wrap">
+          <div class="gauge-bar"><div class="gauge-fill" id="fuelBar"></div></div>
+        </div>
+        <canvas id="fuelChart" height="60"></canvas>
+      </div>
+
+      <!-- Location card -->
+      <div class="card">
+        <h3>Location</h3>
+        <div id="miniMap"></div>
+        <div class="sub-value" id="lastSeen"></div>
+        <div class="pill-row">
+          <span class="pill" id="lockPill">—</span>
+          <span class="pill" id="alarmPill">—</span>
+          <span class="pill" id="tripPill" style="display:none"></span>
+        </div>
+      </div>
+
+      <!-- Oil & Odometer card -->
+      <div class="card">
+        <h3>Engine</h3>
+        <div class="kv-list">
+          <div class="kv"><span>Oil life</span><strong id="oilLife">—</strong></div>
+          <div class="kv"><span>Odometer</span><strong id="odometer">—</strong></div>
+          <div class="kv"><span>Battery</span><strong id="battery">—</strong></div>
+        </div>
+      </div>
+
+      <!-- Tire pressures card -->
+      <div class="card">
+        <h3>Tire Pressure</h3>
+        <div class="tire-grid">
+          <div class="tire tire-fl"><span class="tire-label">FL</span><strong id="tireFL">—</strong></div>
+          <div class="tire tire-fr"><span class="tire-label">FR</span><strong id="tireFR">—</strong></div>
+          <div class="tire tire-rl"><span class="tire-label">RL</span><strong id="tireRL">—</strong></div>
+          <div class="tire tire-rr"><span class="tire-label">RR</span><strong id="tireRR">—</strong></div>
+        </div>
+      </div>
+
+      <!-- Stats card -->
+      <div class="card">
+        <h3>Stats</h3>
+        <div class="kv-list">
+          <div class="kv"><span>Trips this week</span><strong id="weekTrips">—</strong></div>
+          <div class="kv"><span>Distance this week</span><strong id="weekDist">—</strong></div>
+          <div class="kv"><span>Trips this month</span><strong id="monthTrips">—</strong></div>
+          <div class="kv"><span>Distance this month</span><strong id="monthDist">—</strong></div>
+          <div class="kv"><span>Total trips</span><strong id="totalTrips">—</strong></div>
+          <div class="kv"><span>Total distance</span><strong id="totalDist">—</strong></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== MAP ===================== -->
+  <section id="tab-map" class="tab-content">
+    <div class="map-toolbar">
+      <select id="tripSelect"><option value="">— select a trip —</option></select>
+      <span id="tripInfo" class="trip-info-label"></span>
+      <button id="showAllTripsBtn" class="btn-sm">Show all</button>
+    </div>
+    <div id="mainMap"></div>
+  </section>
+
+  <!-- ===================== TRIPS ===================== -->
+  <section id="tab-trips" class="tab-content">
+    <div class="trips-toolbar">
+      <span id="tripsCount"></span>
+    </div>
+    <table id="tripsTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Duration</th>
+          <th>Distance</th>
+        </tr>
+      </thead>
+      <tbody id="tripsBody"></tbody>
+    </table>
+    <div id="tripsEmpty" class="empty-state" style="display:none">No trips recorded yet.</div>
+  </section>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
