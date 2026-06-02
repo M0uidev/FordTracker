@@ -1,0 +1,20 @@
+# credentials — never commit
+.env
+
+# virtualenv
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# database
+*.db
+*.db-shm
+*.db-wal
+
+# editor
+.idea/
+.vscode/
+*.swp
